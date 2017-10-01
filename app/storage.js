@@ -1,15 +1,27 @@
 import storage from 'electron-storage';
 
-const tokenFile = 'vk_uploader_token';
+// файл для хранения токена VK
+const tokenFile = 'token';
 
-function getToken() {
-    return storage.get(tokenFile)
-        .then(token => {
-            return token[0];
-        })
-        .catch(err => {
-            throw err;
-        })
+// файл для хранения данных о сессии пользователя, пока только последний путь
+const sessionFile = 'session';
+
+// файл для хранения пользовательских данных
+const userDataFile = 'user';
+
+async function getUserData() {
+    return await storage.get(userDataFile);
+}
+
+function setUserData(userData) {
+    return storage.set(userDataFile, userData).catch(err => {
+        console.error(err);
+    })
+}
+
+async function getToken() {
+    const token = await storage.get(tokenFile);
+    return token[0];
 }
 
 function setToken(token) {
@@ -18,4 +30,15 @@ function setToken(token) {
     })
 }
 
-export { getToken, setToken };
+async function getLastPath() {
+    const session = await storage.get(sessionFile);
+    return session[0];
+}
+
+function setLastPath(path) {
+    return storage.set(sessionFile, [path]).catch(err => {
+        console.error(err);
+    });
+}
+
+export { getToken, setToken, getLastPath, setLastPath, getUserData, setUserData };

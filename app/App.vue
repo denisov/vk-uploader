@@ -1,32 +1,15 @@
 <template>
     <div>
         <div id="sidebar">
-            <p>
-                some data
-            </p>
-            <p></p>
-
-            <div>
-                <button class="ui olive button" v-on:click="test1">
-                    Загрузить
-                </button>
-            </div>
+            <buttons></buttons>
         </div>
         <div id="main-container">
-            <breadcrumbs :dir="dir" v-on:breadcrumb-path-changed="modifyPath($event)"></breadcrumbs>
+            <breadcrumbs :dir="dir" v-on:path-changed="modifyPath($event)"></breadcrumbs>
 
             <div id="content">
                 <div style="margin: 5px;">
                     <div id="file-list">
-                        <dir-list :dir="dir" v-on:dirlist-path-changed="modifyPath($event)"></dir-list>
-                        <!--<div data-path="/media/andrey/E/photo/2006_07_30 Мила ДР/.sync" class="file">-->
-                            <!--<div class="icon"><img src="static/img/folder.png"></div>-->
-                            <!--<div class="name">Обработано1</div>-->
-                        <!--</div>-->
-                        <!--<div data-path="/media/andrey/E/photo/2006_07_30 Мила ДР/ZbThumbnail.info" class="file focus">-->
-                            <!--<div class="icon"><img src="static/img/blank.png"></div>-->
-                            <!--<div class="name">ZbThumbnail.info</div>-->
-                        <!--</div>-->
+                        <dir-list :dir="dir" v-on:path-changed="modifyPath($event)"></dir-list>
                     </div>
                 </div>
             </div>
@@ -38,37 +21,46 @@
 <script>
     import DirList from './components/DirList.vue'
     import Breadcrumbs from './components/Breadcrumbs.vue'
+    import Buttons from './components/Buttons.vue'
+
+    import os from 'os'
+    const path = require('path');
+    import {getLastPath, setLastPath} from './storage'
+    import * as fs from 'fs'
 
     export default {
+
         data: function () {
             return {
-                dir: "c:\\Users\\IEUser\\"
+                dir: ""
+            }
+        },
+
+        created: async function () {
+            try {
+                const lastPath = await getLastPath();
+                if (fs.statSync(lastPath).isDirectory()) {
+                    this.dir = lastPath;
+                } else {
+                    this.modifyPath(os.homedir() + path.sep);
+                }
+            } catch (err) {
+                console.error("Не могу получить последний путь ", err);
+                this.modifyPath(os.homedir() + path.sep);
             }
         },
 
         components: {
             DirList,
-            Breadcrumbs
+            Breadcrumbs,
+            Buttons
         },
 
         methods: {
-            test1: function () {
-                this.dir = "/media/andrey/E/photo/OTHER/";
-            },
-
             modifyPath: function (newPath) {
                 this.dir = newPath;
+                setLastPath(newPath);
             }
         }
     }
-
-//    let foo = localStorage.getItem('foo');
-//    console.log(foo);
-//    localStorage.setItem('foo',  foo + 1);
-//
-//    export default {
-//        components: {
-//            DirList
-//        }
-//    }
 </script>

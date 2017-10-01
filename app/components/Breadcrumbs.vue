@@ -51,15 +51,8 @@
                         newPath += path.sep;
                     }
                 }
-                //console.log("dirClickHandler pathIndex=" + pathIndex + ' NEW path=' + newPath);
-                this.$emit('breadcrumb-path-changed', newPath);
-            }
-        },
-
-        data: function () {
-            return {
-
-            }
+                this.$emit('path-changed', newPath);
+            },
         }
     }
 </script>

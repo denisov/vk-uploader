@@ -3,7 +3,7 @@
         <div
             v-for="(item, index) in files"
             v-bind:class="{ focus: item.selected }"
-            v-on:dblclick="item.type == 'dir' ? doubleClickItamHandler(item.name) : null"
+            v-on:dblclick="item.type == 'dir' ? doubleClickItemHandler(item.name) : null"
             v-on:click="clickItemHandler(index, $event)"
             class="file"
         >
@@ -19,6 +19,9 @@
 <script>
     import * as fs from 'fs'
     const path = require('path');
+    import {EventBus} from './../event-bus'
+    import {ensureUserAlbum, uploadToAlbum} from './../vk'
+    import {getUserData} from './../storage'
 
     function filesCompare(a, b) {
         if (a.type == 'dir' && b.type != 'dir') {
@@ -32,6 +35,20 @@
                 return 1;
             return 0;
         }
+    }
+
+    function uploadButtonHandler() {
+        // todo имя папки передавать реальное
+        getUserData().then(userData => {
+            ensureUserAlbum(userData.first_name  + ' ' + userData.last_name + ' ' + '2015-02-01')
+                .then(()=> {
+                    console.log('after ensure');
+
+                })
+                .catch(err => {
+                    console.error(err);
+                });
+        });
     }
 
     export default {
@@ -52,7 +69,38 @@
         },
 
         created: function () {
-            this.setFiles();
+            if (this.dir) {
+                this.setFiles();
+            }
+            EventBus.$on('upload-button2', async () => {
+
+                let filesToUpload = [];
+                let parentDir = '';
+
+                this.files.forEach((file, key) => {
+                    if (!file.selected) {
+                        return;
+                    }
+                    filesToUpload.push(this.dir + file.name);
+
+                    if (parentDir == '') {
+                        let pathArr = this.dir.split(path.sep);
+                        parentDir = pathArr[pathArr.length - 2];
+                    }
+                });
+
+                if (filesToUpload.length == 0) {
+                    console.log('нет файлов, выходим');
+                    return;
+                }
+
+                const userData = await getUserData();
+                const albumId = await ensureUserAlbum(userData.first_name  + ' ' + userData.last_name + ' ' + parentDir);
+                console.log('after ensure. Album Id=', albumId);
+                Object.values(filesToUpload).forEach((file) => {
+                    uploadToAlbum (file, albumId)
+                });
+            });
         },
 
         methods: {
@@ -90,15 +138,16 @@
                     files = fs.readdirSync(this.dir);
                 } catch (err) {
                     // TODO писать в левый блок
-                    console.log(err);
+                    console.error(err);
                 }
 
                 files.forEach(file => {
+                    let isDir;
                     try {
-                        let isDir = fs.statSync(this.dir + file).isDirectory();
+                        isDir = fs.statSync(this.dir + file).isDirectory();
                     } catch (err) {
-                        // не хватило прав, например
-                        console.log(err);
+                        // не хватило прав, например, не показываем
+                        console.error(err);
                         return;
                     }
                     if (!isDir && path.extname(this.dir + file).toLowerCase() != '.jpg') {
@@ -114,8 +163,8 @@
 
                 this.files = res;
             },
-            doubleClickItamHandler: function (dirName) {
-                this.$emit('dirlist-path-changed', this.dir + dirName + path.sep);
+            doubleClickItemHandler: function (dirName) {
+                this.$emit('path-changed', this.dir + dirName + path.sep);
             }
         }
 

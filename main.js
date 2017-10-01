@@ -4,11 +4,12 @@ const BrowserWindow = electron.BrowserWindow;
 const authenticateVK = require('electron-vk-oauth2');
 const VKApi = require('node-vkapi');
 
-import { getToken, setToken } from './app/storage';
+import { getToken, setToken, setUserData } from './app/storage';
+import {getUserName } from './app/vk'
 
 // FIXME вынести в конфиг или в самостоятельный файл
 const appId = 5881665;
-const appSecret = '';
+const appSecret = 'WRKC7MljSHuAxwnuHDQ5';
 
 let mainWindow;
 
@@ -67,6 +68,13 @@ function requestAndSaveVkToken() {
         console.log("Новый токен: " + res.accessToken + " сохраняем его в хранилище");
         setToken(res.accessToken);
 
+        getUserName(res.accessToken)
+            .then(res => {
+                setUserData(res);
+            })
+            .catch(err => {
+                console.error(err);
+            });
     }).catch((err) => {
         console.error(err);
     });
